@@ -1,11 +1,13 @@
 from asyncio import events
+from distutils import command
 from typing import AsyncContextManager
 import discord, sys, os, pymongo, asyncio, json, random
+from numpy import append
 from pymongo import database
 import matplotlib.pyplot as plt
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from scipy import rand
+from torch import Graph
 
 TOKEN = ""
 dbTOKEN = ""
@@ -15,7 +17,8 @@ To view price of a stock - [$view price <stock name>],
 To buy certain ammount of stock - [$buy <stock name> <ammount>], 
 To sell certain ammount of stock - [$sell <stock name> <ammount>], 
 To list your stocks - [$list my stocks], 
-To view your balance - [$balance]"""
+To view your balance - [$balance], 
+To view stock price graph - [$view graph <3h/5h/10h/1d/3d/all> <stock name>]"""
 
 with open("TOKEN.json", 'r') as tokenfile:
     DecodedFile = json.load(tokenfile)
@@ -53,29 +56,55 @@ async def price_updater():
                     chance = random.randint(1, 100)
                     if chance >= 1 and chance < 50:
                         corpPrice = stock['corporationPrice']
-                        corpPrice = (corpPrice / 100) * 2 + corpPrice
+                        corpPrice = (corpPrice / 100) * 1 + corpPrice
                         eventHistory = stock['eventIDs']
                         eventID = random.randint(1, 10000000000000000)
                         eventData = {'stockName': stock['name'], 
                             'eventID': eventID, 
-                            'content': f"{stock['name']}'s corporation price has risen by 2%", 
-                            'priceChange': "+ 2%"}
+                            'content': f"{stock['name']}'s corporation price has risen by 1%", 
+                            'priceChange': "+ 1%"}
                         eventHistory.append(eventID)
                         dbStocks.update_one({'name': stock['name']}, {'$set': {'corporationPrice': corpPrice, 'eventIDs': eventHistory}})
                         dbEvents.insert_one(eventData)
                     if chance >= 50 and chance < 100:
                         corpPrice = stock['corporationPrice']
-                        corpPrice = corpPrice - (corpPrice / 100) * 2
+                        corpPrice = corpPrice - (corpPrice / 100) * 1
                         eventHistory = stock['eventIDs']
                         eventID = random.randint(1, 10000000000000000)
                         eventData = {'stockName': stock['name'], 
                             'eventID': eventID, 
-                            'content': f"{stock['name']}'s corporation price has dropped by 2%", 
-                            'priceChange': "- 2%"}
+                            'content': f"{stock['name']}'s corporation price has dropped by 1%", 
+                            'priceChange': "- 1%"}
                         eventHistory.append(eventID)
                         dbStocks.update_one({'name': stock['name']}, {'$set': {'corporationPrice': corpPrice, 'eventIDs': eventHistory}})
                         dbEvents.insert_one(eventData)
                 if chance >= 35 and chance < 70:
+                    chance = random.randint(1, 100)
+                    if chance >= 1 and chance < 50:
+                        corpPrice = stock['corporationPrice']
+                        corpPrice = (corpPrice / 100) * 3 + corpPrice
+                        eventHistory = stock['eventIDs']
+                        eventID = random.randint(1, 10000000000000000)
+                        eventData = {'stockName': stock['name'], 
+                            'eventID': eventID, 
+                            'content': f"{stock['name']}'s corporation price has risen by 3%", 
+                            'priceChange': "+ 3%"}
+                        eventHistory.append(eventID)
+                        dbStocks.update_one({'name': stock['name']}, {'$set': {'corporationPrice': corpPrice, 'eventIDs': eventHistory}})
+                        dbEvents.insert_one(eventData)
+                    if chance >= 50 and chance < 100:
+                        corpPrice = stock['corporationPrice']
+                        corpPrice = corpPrice - (corpPrice / 100) * 3
+                        eventHistory = stock['eventIDs']
+                        eventID = random.randint(1, 10000000000000000)
+                        eventData = {'stockName': stock['name'], 
+                            'eventID': eventID, 
+                            'content': f"{stock['name']}'s corporation price has dropped by 3%", 
+                            'priceChange': "- 3%"}
+                        eventHistory.append(eventID)
+                        dbStocks.update_one({'name': stock['name']}, {'$set': {'corporationPrice': corpPrice, 'eventIDs': eventHistory}})
+                        dbEvents.insert_one(eventData)
+                if chance >= 70 and chance < 90:
                     chance = random.randint(1, 100)
                     if chance >= 1 and chance < 50:
                         corpPrice = stock['corporationPrice']
@@ -101,55 +130,29 @@ async def price_updater():
                         eventHistory.append(eventID)
                         dbStocks.update_one({'name': stock['name']}, {'$set': {'corporationPrice': corpPrice, 'eventIDs': eventHistory}})
                         dbEvents.insert_one(eventData)
-                if chance >= 70 and chance < 90:
-                    chance = random.randint(1, 100)
-                    if chance >= 1 and chance < 50:
-                        corpPrice = stock['corporationPrice']
-                        corpPrice = (corpPrice / 100) * 10 + corpPrice
-                        eventHistory = stock['eventIDs']
-                        eventID = random.randint(1, 10000000000000000)
-                        eventData = {'stockName': stock['name'], 
-                            'eventID': eventID, 
-                            'content': f"{stock['name']}'s corporation price has risen by 10%", 
-                            'priceChange': "+ 10%"}
-                        eventHistory.append(eventID)
-                        dbStocks.update_one({'name': stock['name']}, {'$set': {'corporationPrice': corpPrice, 'eventIDs': eventHistory}})
-                        dbEvents.insert_one(eventData)
-                    if chance >= 50 and chance < 100:
-                        corpPrice = stock['corporationPrice']
-                        corpPrice = corpPrice - (corpPrice / 100) * 10
-                        eventHistory = stock['eventIDs']
-                        eventID = random.randint(1, 10000000000000000)
-                        eventData = {'stockName': stock['name'], 
-                            'eventID': eventID, 
-                            'content': f"{stock['name']}'s corporation price has dropped by 10%", 
-                            'priceChange': "- 10%"}
-                        eventHistory.append(eventID)
-                        dbStocks.update_one({'name': stock['name']}, {'$set': {'corporationPrice': corpPrice, 'eventIDs': eventHistory}})
-                        dbEvents.insert_one(eventData)
                 if chance >= 90 and chance < 100:
                     chance = random.randint(1, 100)
                     if chance >= 1 and chance < 50:
                         corpPrice = stock['corporationPrice']
-                        corpPrice = (corpPrice / 100) * 15 + corpPrice
+                        corpPrice = (corpPrice / 100) * 7 + corpPrice
                         eventHistory = stock['eventIDs']
                         eventID = random.randint(1, 10000000000000000)
                         eventData = {'stockName': stock['name'], 
                             'eventID': eventID, 
-                            'content': f"{stock['name']}'s corporation price has risen by 15%", 
-                            'priceChange': "+ 15%"}
+                            'content': f"{stock['name']}'s corporation price has risen by 7%", 
+                            'priceChange': "+ 7%"}
                         eventHistory.append(eventID)
                         dbStocks.update_one({'name': stock['name']}, {'$set': {'corporationPrice': corpPrice, 'eventIDs': eventHistory}})
                         dbEvents.insert_one(eventData)
                     if chance >= 50 and chance < 100:
                         corpPrice = stock['corporationPrice']
-                        corpPrice = corpPrice - (corpPrice / 100) * 15
+                        corpPrice = corpPrice - (corpPrice / 100) * 7
                         eventHistory = stock['eventIDs']
                         eventID = random.randint(1, 10000000000000000)
                         eventData = {'stockName': stock['name'], 
                             'eventID': eventID, 
-                            'content': f"{stock['name']}'s corporation price has dropped by 15%", 
-                            'priceChange': "- 15%"}
+                            'content': f"{stock['name']}'s corporation price has dropped by 7%", 
+                            'priceChange': "- 7%"}
                         eventHistory.append(eventID)
                         dbStocks.update_one({'name': stock['name']}, {'$set': {'corporationPrice': corpPrice, 'eventIDs': eventHistory}})
                         dbEvents.insert_one(eventData)
@@ -201,8 +204,8 @@ async def on_message(message):
                 noStock = False
                 price = stock['currentPrice']
         if noStock:
-            await message.channel.send("No stock found.... Check your command, the command should be [*view price <stock name>]")
-            await message.channel.send("You can also get list of available stocks with: [*list stocks]")
+            await message.channel.send("No stock found.... Check your command, the command should be [$view price <stock name>]")
+            await message.channel.send("You can also get list of available stocks with: [$list stocks]")
             return
         await message.channel.send(f"{commandInfo[0]} at {dt_string} is ${price}")
 
@@ -220,7 +223,7 @@ async def on_message(message):
             buyAmmount = int(commandInfo[1])
         except:
             await message.channel.send("The buy ammount is not valid number, use only numbers")
-            await message.channel.send("Just to remind, the right way for the command is [*buy <stock name> <ammount>]")
+            await message.channel.send("Just to remind, the right way for the command is [$buy <stock name> <ammount>]")
             return
         stockFound = False
         Price = 0
@@ -237,7 +240,7 @@ async def on_message(message):
                     notEnoughStocks = True
         if not stockFound:
             await message.channel.send("You specified stock was not found, maybe you wrote the command wrong....")
-            await message.channel.send("The right way is [*buy <stock name> <ammount>]")
+            await message.channel.send("The right way is [$buy <stock name> <ammount>]")
             return
         if notEnoughStocks:
             await message.channel.send(f"There is not enough stocks left, there is only {stockCount} available")
@@ -256,7 +259,7 @@ async def on_message(message):
                 if leftOverMoney < 0:
                     notEnoughMoney = True
         if not accountFound:
-            await message.channel.send("You don't have an investing account, you can make one using [*create account]")
+            await message.channel.send("You don't have an investing account, you can make one using [$create account]")
             return
         if notEnoughMoney:
             await message.channel.send("You don't have enough balance to make this purchase...")
@@ -288,7 +291,7 @@ async def on_message(message):
             sellAmmount = int(commandInfo[1])
         except:
             await message.channel.send("The sell ammount is not valid number, use only numbers")
-            await message.channel.send("Just to remind, the right way for the command is [*sell <stock name> <ammount>]")
+            await message.channel.send("Just to remind, the right way for the command is [$sell <stock name> <ammount>]")
             return
         stockFound = False
         Price = 0
@@ -300,7 +303,7 @@ async def on_message(message):
                 stockCount = stock['stockCount']
         if not stockFound:
             await message.channel.send("You specified stock was not found, maybe you wrote the command wrong....")
-            await message.channel.send("The right way is [*sell <stock name> <ammount>]")
+            await message.channel.send("The right way is [$sell <stock name> <ammount>]")
             return
         accountFound = False
         accountStocks = None
@@ -352,7 +355,7 @@ async def on_message(message):
                 accountFound = True
                 accountStocks = account['stocks']
         if not accountFound:
-            await message.channel.send("You don't have an investing account, you can make one using [*create account]")
+            await message.channel.send("You don't have an investing account, you can make one using [$create account]")
             return
         for key, value in accountStocks.items():
             await message.channel.send(f"1) {key} = {value}")
@@ -365,12 +368,153 @@ async def on_message(message):
                 accountFound = True
                 Balance = account['balance']
         if not accountFound:
-            await message.channel.send("You don't have an investing account, you can make one using [*create account]")
+            await message.channel.send("You don't have an investing account, you can make one using [$create account]")
             return
         await message.channel.send(f"Your balance is ${Balance}")
     
     if message.content == "$help":
         await message.channel.send(CommandHelp)
+    
+    if "view graph" in message.content:
+        commandInfo = message.content.split(' ')
+        commandInfo.remove('$view')
+        commandInfo.remove("graph")
+        if commandInfo[0] not in ['3h', '5h', '10h', '1d', '3d', 'all']:
+            await message.channel.send("You gave the command wrong time attribute, i has to be one of those: 3h; 5h; 10h; 1d; 3d; all;")
+            return
+        stockFound = False
+        priceHistory = None
+        for stock in stock_read:
+            if stock['name'] == commandInfo[1]:
+                stockFound = True
+                priceHistory = stock['priceHistory']
+        if not stockFound:
+            await message.channel.send("You specified stock was not found, maybe you wrote the command wrong....")
+            await message.channel.send("The right way is [$view graph <3h/5h/10h/1d/3d/all> <stock name>]")
+            return
+        start = None
+        if commandInfo[0] == '3h':
+            start = datetime.now() - timedelta(hours=3)
+            end = datetime.now()
+            PriceList = []
+            DateList = []
+            DateIndexList = []
+            dateIndex = 0
+            for key, value in priceHistory.items():
+                keyDate = datetime.strptime(key, "%d/%m/%Y %H:%M:%S")
+                if start <= keyDate <= end:
+                    PriceList.append(value)
+                    DateList.append(key)
+                    DateIndexList.append(dateIndex)
+                    dateIndex += 1
+            plt.xticks(DateIndexList, DateList)
+            plt.xlabel("Date")
+            plt.ylabel("$ - Price")
+            plt.plot(DateIndexList, PriceList)
+            plt.savefig('graph.png', bbox_inches='tight')
+            await message.channel.send(file=discord.File("graph.png"))
+            os.remove('graph.png')
+        if commandInfo[0] == '5h':
+            start = datetime.now() - timedelta(hours=5)
+            end = datetime.now()
+            PriceList = []
+            DateList = []
+            DateIndexList = []
+            dateIndex = 0
+            for key, value in priceHistory.items():
+                keyDate = datetime.strptime(key, "%d/%m/%Y %H:%M:%S")
+                if start <= keyDate <= end:
+                    PriceList.append(value)
+                    DateList.append(key)
+                    DateIndexList.append(dateIndex)
+                    dateIndex += 1
+            plt.xticks(DateIndexList, DateList)
+            plt.xlabel("Date")
+            plt.ylabel("$ - Price")
+            plt.plot(DateIndexList, PriceList)
+            plt.savefig('graph.png', bbox_inches='tight')
+            await message.channel.send(file=discord.File("graph.png"))
+            os.remove('graph.png')
+        if commandInfo[0] == '10h':
+            start = datetime.now() - timedelta(hours=10)
+            end = datetime.now()
+            PriceList = []
+            DateList = []
+            DateIndexList = []
+            dateIndex = 0
+            for key, value in priceHistory.items():
+                keyDate = datetime.strptime(key, "%d/%m/%Y %H:%M:%S")
+                if start <= keyDate <= end:
+                    PriceList.append(value)
+                    DateList.append(key)
+                    DateIndexList.append(dateIndex)
+                    dateIndex += 1
+            plt.xticks(DateIndexList, DateList)
+            plt.xlabel("Date")
+            plt.ylabel("$ - Price")
+            plt.plot(DateIndexList, PriceList)
+            plt.savefig('graph.png', bbox_inches='tight')
+            await message.channel.send(file=discord.File("graph.png"))
+            os.remove('graph.png')
+        if commandInfo[0] == '1d':
+            start = datetime.now() - timedelta(days=1)
+            end = datetime.now()
+            PriceList = []
+            DateList = []
+            DateIndexList = []
+            dateIndex = 0
+            for key, value in priceHistory.items():
+                keyDate = datetime.strptime(key, "%d/%m/%Y %H:%M:%S")
+                if start <= keyDate <= end:
+                    PriceList.append(value)
+                    DateList.append(key)
+                    DateIndexList.append(dateIndex)
+                    dateIndex += 1
+            plt.xticks(DateIndexList, DateList)
+            plt.xlabel("Date")
+            plt.ylabel("$ - Price")
+            plt.plot(DateIndexList, PriceList)
+            plt.savefig('graph.png', bbox_inches='tight')
+            await message.channel.send(file=discord.File("graph.png"))
+            os.remove('graph.png')
+        if commandInfo[0] == '3d':
+            start = datetime.now() - timedelta(days=3)
+            end = datetime.now()
+            PriceList = []
+            DateList = []
+            DateIndexList = []
+            dateIndex = 0
+            for key, value in priceHistory.items():
+                keyDate = datetime.strptime(key, "%d/%m/%Y %H:%M:%S")
+                if start <= keyDate <= end:
+                    PriceList.append(value)
+                    DateList.append(key)
+                    DateIndexList.append(dateIndex)
+                    dateIndex += 1
+            plt.xticks(DateIndexList, DateList)
+            plt.xlabel("Date")
+            plt.ylabel("$ - Price")
+            plt.plot(DateIndexList, PriceList)
+            plt.savefig('graph.png', bbox_inches='tight')
+            await message.channel.send(file=discord.File("graph.png"))
+            os.remove('graph.png')
+        if commandInfo[0] == 'all':
+            PriceList = []
+            DateList = []
+            DateIndexList = []
+            dateIndex = 0
+            for key, value in priceHistory.items():
+                PriceList.append(value)
+                DateList.append(key)
+                DateIndexList.append(dateIndex)
+                dateIndex += 1
+            plt.xticks(DateIndexList, DateList)
+            plt.xlabel("Date")
+            plt.ylabel("$ - Price")
+            plt.plot(DateIndexList, PriceList)
+            plt.savefig('graph.png', bbox_inches='tight')
+            await message.channel.send(file=discord.File("graph.png"))
+            os.remove('graph.png')
     
     if owner_found:
         if '$create stock' in message.content:
